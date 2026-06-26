@@ -8,7 +8,8 @@ struct ProgramsView: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: cols, spacing: 14) {
-                    ForEach(AppData.programCategories, id: \.key) { cat in
+                    ForEach(AppData.programCategories.indices, id: \.self) { i in
+                        let cat = AppData.programCategories[i]
                         NavigationLink {
                             CategoryExercisesView(category: cat.key, title: cat.title)
                         } label: {

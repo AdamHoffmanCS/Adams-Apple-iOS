@@ -80,8 +80,8 @@ struct FastingView: View {
                 .font(.subheadline).foregroundColor(Theme.muted)
 
             HStack(spacing: 10) {
-                ForEach(presets, id: \.label) { p in
-                    presetButton(p)
+                ForEach(presets.indices, id: \.self) { i in
+                    presetButton(presets[i])
                 }
             }
 

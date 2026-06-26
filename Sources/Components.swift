@@ -84,9 +84,10 @@ struct MiniBarChart: View {
             let spacing: CGFloat = 8
             let barW = (geo.size.width - spacing * CGFloat(count - 1)) / CGFloat(count)
             HStack(alignment: .bottom, spacing: spacing) {
-                ForEach(Array(values.enumerated()), id: \.offset) { idx, v in
+                ForEach(values.indices, id: \.self) { idx in
+                    let v = values[idx]
                     VStack(spacing: 4) {
-                        Text(values[idx] == 0 ? "" : "\(Int(values[idx]))")
+                        Text(v == 0 ? "" : "\(Int(v))")
                             .font(.system(size: 10, weight: .semibold))
                             .foregroundColor(Theme.muted)
                         RoundedRectangle(cornerRadius: 4)

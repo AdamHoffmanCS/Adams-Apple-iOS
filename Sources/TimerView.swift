@@ -40,7 +40,8 @@ struct TimerView: View {
                     // Countdown presets
                     if timer.mode == .countdown {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 3), spacing: 10) {
-                            ForEach(presets, id: \.label) { p in
+                            ForEach(presets.indices, id: \.self) { i in
+                                let p = presets[i]
                                 Button(p.label) { timer.setCountdown(seconds: p.secs) }
                                     .font(.system(size: 15, weight: .semibold))
                                     .frame(maxWidth: .infinity).padding(.vertical, 10)
@@ -79,7 +80,7 @@ struct TimerView: View {
 
                         if !timer.rounds.isEmpty {
                             VStack(spacing: 6) {
-                                ForEach(timer.rounds, id: \.num) { r in
+                                ForEach(timer.rounds) { r in
                                     HStack {
                                         Text("Round \(r.num)").font(.subheadline.weight(.semibold))
                                         Spacer()

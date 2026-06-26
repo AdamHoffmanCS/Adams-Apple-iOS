@@ -24,7 +24,9 @@ struct AddCustomExerciseView: View {
                 Section("Basics") {
                     TextField("Name (e.g. Bulgarian Split Squat)", text: $name)
                     Picker("Category", selection: $category) {
-                        ForEach(categories, id: \.value) { Text($0.label).tag($0.value) }
+                        ForEach(categories.indices, id: \.self) { i in
+                            Text(categories[i].label).tag(categories[i].value)
+                        }
                     }
                 }
                 Section("Suggested (optional)") {

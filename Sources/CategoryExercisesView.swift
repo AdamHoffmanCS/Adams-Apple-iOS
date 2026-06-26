@@ -56,7 +56,8 @@ struct CategoryExercisesView: View {
                 .background(Theme.greenLight).foregroundColor(Theme.greenDark).clipShape(Capsule())
         }
         .padding(.bottom, 2)
-        ForEach(Array(AppData.hyroxStations.enumerated()), id: \.offset) { idx, station in
+        ForEach(AppData.hyroxStations.indices, id: \.self) { idx in
+            let station = AppData.hyroxStations[idx]
             exerciseRow(name: station.name, note: store.hyroxNote(for: station.name), number: idx + 1)
         }
 

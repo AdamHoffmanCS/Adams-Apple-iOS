@@ -51,7 +51,8 @@ struct ExercisePickerView: View {
             VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(cats, id: \.key) { c in
+                        ForEach(cats.indices, id: \.self) { i in
+                            let c = cats[i]
                             ChipButton(title: c.label, selected: cat == c.key) { cat = c.key }
                         }
                     }

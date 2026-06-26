@@ -24,7 +24,8 @@ struct ExerciseDBView: View {
             VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
-                        ForEach(AppData.dbFilters, id: \.key) { f in
+                        ForEach(AppData.dbFilters.indices, id: \.self) { i in
+                            let f = AppData.dbFilters[i]
                             ChipButton(title: f.label, selected: filter == f.key) { filter = f.key }
                         }
                     }

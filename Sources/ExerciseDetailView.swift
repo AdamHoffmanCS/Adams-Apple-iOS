@@ -62,11 +62,11 @@ struct ExerciseDetailView: View {
                 if !exercise.instructions.isEmpty {
                     VStack(alignment: .leading, spacing: 10) {
                         Text("How to Perform").font(.title3.weight(.semibold))
-                        ForEach(Array(exercise.instructions.enumerated()), id: \.offset) { idx, step in
+                        ForEach(exercise.instructions.indices, id: \.self) { idx in
                             HStack(alignment: .top, spacing: 10) {
                                 Text("\(idx + 1)").font(.system(size: 13, weight: .bold)).foregroundColor(.white)
                                     .frame(width: 22, height: 22).background(Theme.green).clipShape(Circle())
-                                Text(step).font(.system(size: 15)).foregroundColor(Theme.text)
+                                Text(exercise.instructions[idx]).font(.system(size: 15)).foregroundColor(Theme.text)
                             }
                         }
                     }

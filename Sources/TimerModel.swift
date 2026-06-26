@@ -2,6 +2,12 @@ import Foundation
 import SwiftUI
 import Combine
 
+struct Round: Identifiable {
+    let id = UUID()
+    let num: Int
+    let duration: Int
+}
+
 @MainActor
 final class TimerModel: ObservableObject {
     enum Mode { case stopwatch, countdown }
@@ -11,7 +17,7 @@ final class TimerModel: ObservableObject {
 
     // Stopwatch
     @Published var swElapsed = 0
-    @Published var rounds: [(num: Int, duration: Int)] = []
+    @Published var rounds: [Round] = []
     private var swRoundStart = 0
 
     // Countdown
@@ -93,7 +99,7 @@ final class TimerModel: ObservableObject {
     func roundComplete() {
         guard mode == .stopwatch, isRunning else { return }
         let dur = swElapsed - swRoundStart
-        rounds.insert((num: rounds.count + 1, duration: dur), at: 0)
+        rounds.insert(Round(num: rounds.count + 1, duration: dur), at: 0)
         swRoundStart = swElapsed
     }
 
