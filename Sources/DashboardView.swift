@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct DashboardView: View {
     @EnvironmentObject var store: Store

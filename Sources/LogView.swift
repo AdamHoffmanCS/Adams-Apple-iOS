@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct LogView: View {
     @EnvironmentObject var store: Store

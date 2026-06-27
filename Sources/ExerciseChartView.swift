@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 struct ExerciseChartView: View {
     @EnvironmentObject var store: Store

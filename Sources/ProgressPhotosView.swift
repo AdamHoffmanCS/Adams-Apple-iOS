@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct ProgressPhotosView: View {
     @EnvironmentObject var store: Store

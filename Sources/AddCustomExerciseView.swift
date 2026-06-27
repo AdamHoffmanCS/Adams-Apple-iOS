@@ -36,7 +36,9 @@ struct AddCustomExerciseView: View {
                 Section("Details (optional)") {
                     TextField("Primary muscles (comma separated)", text: $muscles)
                     TextField("Equipment", text: $equipment)
-                    TextField("YouTube link", text: $youtube).keyboardType(.URL).autocapitalization(.none)
+                    TextField("YouTube link", text: $youtube)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
                 }
                 Section("Description / Key Points") {
                     TextField("One key point per line…", text: $notes, axis: .vertical)
