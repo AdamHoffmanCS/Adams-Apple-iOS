@@ -58,7 +58,7 @@ struct TimerView: View {
                             Image(systemName: "arrow.counterclockwise")
                                 .font(.system(size: 20, weight: .semibold))
                                 .frame(width: 56, height: 56)
-                                .background(Theme.bg).foregroundColor(Theme.text)
+                                .background(Theme.inset).foregroundColor(Theme.text)
                                 .clipShape(Circle())
                         }
                         Button { timer.toggle() } label: {
@@ -88,7 +88,7 @@ struct TimerView: View {
                                             .foregroundColor(Theme.muted)
                                     }
                                     .padding(.vertical, 8).padding(.horizontal, 12)
-                                    .background(Theme.bg).clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .background(Theme.inset).clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                             }
                         }

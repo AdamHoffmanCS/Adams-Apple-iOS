@@ -11,6 +11,7 @@ struct AdamsAppleApp: App {
                 .environmentObject(store)
                 .environmentObject(timer)
                 .tint(Theme.green)
+                .preferredColorScheme(.dark)
         }
     }
 }

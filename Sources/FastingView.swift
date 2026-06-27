@@ -92,7 +92,7 @@ struct FastingView: View {
                     TextField("16", text: $customHours)
                         .keyboardType(.decimalPad)
                         .padding(10)
-                        .background(Theme.card)
+                        .background(Theme.inset)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Theme.border))
                     Button("Set") { setCustom() }
                         .font(.system(size: 15, weight: .bold))

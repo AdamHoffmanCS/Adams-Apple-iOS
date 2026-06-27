@@ -114,7 +114,7 @@ struct ProgramExerciseRow: View {
                     } label: {
                         Image(systemName: "chart.bar.fill")
                             .font(.system(size: 14))
-                            .padding(7).background(Theme.bg).clipShape(RoundedRectangle(cornerRadius: 6))
+                            .padding(7).background(Theme.inset).clipShape(RoundedRectangle(cornerRadius: 6))
                             .foregroundColor(Theme.text)
                     }
                     .buttonStyle(.plain)

@@ -25,7 +25,7 @@ struct ExerciseDetailView: View {
                 // Badges
                 HStack(spacing: 8) {
                     if let lvl = exercise.level { badge(lvl.capitalized, Theme.greenLight, Theme.greenDark) }
-                    badge(exercise.category.capitalized, Theme.bg, Theme.text)
+                    badge(exercise.category.capitalized, Theme.inset, Theme.text)
                 }
 
                 // Meta

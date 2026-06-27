@@ -56,7 +56,7 @@ struct CategoryCard: View {
         }
         .frame(maxWidth: .infinity, minHeight: 120, alignment: .topLeading)
         .padding(16)
-        .background(highlight ? AnyView(Theme.text) : AnyView(Theme.card))
+        .background(highlight ? AnyView(Theme.green) : AnyView(Theme.card))
         .clipShape(RoundedRectangle(cornerRadius: Theme.radius))
         .overlay {
             if dashed {

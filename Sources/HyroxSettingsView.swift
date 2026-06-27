@@ -30,7 +30,7 @@ struct HyroxSettingsView: View {
                                             set: { values[def.name] = $0 }))
                                     .keyboardType(.decimalPad)
                                     .padding(8)
-                                    .background(Theme.bg)
+                                    .background(Theme.inset)
                                     .clipShape(RoundedRectangle(cornerRadius: 6))
                                     .frame(width: 100)
                                 Text(def.unit).foregroundColor(Theme.muted)

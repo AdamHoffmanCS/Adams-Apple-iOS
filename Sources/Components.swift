@@ -155,9 +155,10 @@ struct ToastView: View {
         Text(message)
             .font(.system(size: 14, weight: .semibold))
             .padding(.vertical, 12).padding(.horizontal, 20)
-            .background(Theme.text)
-            .foregroundColor(.white)
+            .background(Theme.card)
+            .foregroundColor(Theme.text)
             .clipShape(Capsule())
+            .overlay(Capsule().stroke(Theme.border))
             .shadow(radius: 8)
             .transition(.move(edge: .bottom).combined(with: .opacity))
     }
