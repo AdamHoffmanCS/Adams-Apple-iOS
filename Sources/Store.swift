@@ -12,6 +12,15 @@ final class Store: ObservableObject {
     @Published var fastConfig = FastConfig()                { didSet { persist(fastConfig, "adamsAppleFastCfg") } }
     @Published var fastState: FastState?                    { didSet { persist(fastState, "adamsAppleFastState") } }
 
+    // Progress tracking
+    @Published var weights: [MetricEntry] = []             { didSet { persist(weights, "ppWeights") } }
+    @Published var bodyFat: [MetricEntry] = []             { didSet { persist(bodyFat, "ppBodyFat") } }
+    @Published var restingHR: [MetricEntry] = []           { didSet { persist(restingHR, "ppRestingHR") } }
+    @Published var bloodPressure: [BloodPressureEntry] = [] { didSet { persist(bloodPressure, "ppBP") } }
+    @Published var bloodMarkers: [BloodMarkerEntry] = []   { didSet { persist(bloodMarkers, "ppBlood") } }
+    @Published var measurements: [MeasurementEntry] = []   { didSet { persist(measurements, "ppMeasure") } }
+    @Published var photos: [ProgressPhoto] = []            { didSet { persist(photos, "ppPhotos") } }
+
     // In-memory only
     @Published var remoteExercises: [DBExercise] = []
     @Published var selectedTab = 0     // 0 Dashboard · 1 Programs · 2 Workouts · 3 Fasting · 4 Log
@@ -24,6 +33,14 @@ final class Store: ObservableObject {
         customExercises = restore("adamsAppleCustomEx", [DBExercise].self) ?? []
         fastConfig      = restore("adamsAppleFastCfg", FastConfig.self) ?? FastConfig()
         fastState       = restore("adamsAppleFastState", FastState.self) ?? nil
+
+        weights       = restore("ppWeights", [MetricEntry].self) ?? []
+        bodyFat       = restore("ppBodyFat", [MetricEntry].self) ?? []
+        restingHR     = restore("ppRestingHR", [MetricEntry].self) ?? []
+        bloodPressure = restore("ppBP", [BloodPressureEntry].self) ?? []
+        bloodMarkers  = restore("ppBlood", [BloodMarkerEntry].self) ?? []
+        measurements  = restore("ppMeasure", [MeasurementEntry].self) ?? []
+        photos        = restore("ppPhotos", [ProgressPhoto].self) ?? []
 
         if let saved = restore("hyroxTargets", [String: Double].self) {
             hyroxTargets = saved

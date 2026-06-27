@@ -11,9 +11,19 @@ version feature-for-feature:
   custom exercises with sets/reps, YouTube link, and key-point instructions.
 - **Fasting** — customizable fasting window, live countdown, and a ring that shifts
   from **red → yellow → green** as your eating window approaches.
-- **Log** — full workout log with per-exercise progress charts.
+- **Progress** — a tracking hub with three categories:
+  - **Health** — weight, body-fat %, resting heart rate, blood pressure, body
+    measurements, and a blood-work panel (A1C, total/LDL/HDL cholesterol,
+    triglycerides, fasting glucose, vitamin D, TSH). Each metric keeps full history
+    with trend charts.
+  - **Progress Photos** — capture from the **camera** or pick from your library;
+    photos are saved on-device with the date underneath.
+  - **Workout Log** — the full workout log with per-exercise progress charts.
 - **Timer** — floating stopwatch + countdown with round tracking (tap the green
   circle button).
+
+> The bottom tab bar is **Dashboard · Programs · Workouts · Fasting · Progress**.
+> The Workout Log now lives inside the Progress tab (iPhone shows at most 5 tabs).
 
 All data persists locally via `UserDefaults` (the same data the web app kept in
 `localStorage`).

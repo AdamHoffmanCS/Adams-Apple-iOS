@@ -16,8 +16,8 @@ struct RootView: View {
                     .tabItem { Label("Workouts", systemImage: "dumbbell.fill") }.tag(2)
                 FastingView()
                     .tabItem { Label("Fasting", systemImage: "hourglass") }.tag(3)
-                LogView()
-                    .tabItem { Label("Log", systemImage: "square.and.pencil") }.tag(4)
+                ProgressHubView()
+                    .tabItem { Label("Progress", systemImage: "chart.xyaxis.line") }.tag(4)
             }
 
             // Floating timer button (mirrors the web app's floating timer widget)

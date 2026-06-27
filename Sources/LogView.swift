@@ -5,38 +5,37 @@ struct LogView: View {
     @State private var showClearConfirm = false
 
     var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    if store.log.isEmpty {
-                        Text("No workouts logged yet. Go crush it! 💥")
-                            .foregroundColor(Theme.muted)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding(.top, 60)
-                    } else {
-                        ForEach(store.log) { entry in
-                            NavigationLink {
-                                ExerciseChartView(exerciseName: entry.exercise)
-                            } label: {
-                                LogRow(entry: entry)
-                            }
-                            .buttonStyle(.plain)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                if store.log.isEmpty {
+                    Text("No workouts logged yet. Go crush it! 💥")
+                        .foregroundColor(Theme.muted)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 60)
+                } else {
+                    ForEach(store.log) { entry in
+                        NavigationLink {
+                            ExerciseChartView(exerciseName: entry.exercise)
+                        } label: {
+                            LogRow(entry: entry)
                         }
-
-                        Button("Clear Log") { showClearConfirm = true }
-                            .buttonStyle(PrimaryButtonStyle())
-                            .padding(.top, 8)
+                        .buttonStyle(.plain)
                     }
+
+                    Button("Clear Log") { showClearConfirm = true }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .padding(.top, 8)
                 }
-                .padding(20)
             }
-            .background(Theme.bg.ignoresSafeArea())
-            .navigationTitle("My Workout Log")
-            .confirmationDialog("Clear your entire workout log? This cannot be undone.",
-                                isPresented: $showClearConfirm, titleVisibility: .visible) {
-                Button("Clear Log", role: .destructive) { store.clearLog() }
-                Button("Cancel", role: .cancel) {}
-            }
+            .padding(20)
+        }
+        .background(Theme.bg.ignoresSafeArea())
+        .navigationTitle("My Workout Log")
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog("Clear your entire workout log? This cannot be undone.",
+                            isPresented: $showClearConfirm, titleVisibility: .visible) {
+            Button("Clear Log", role: .destructive) { store.clearLog() }
+            Button("Cancel", role: .cancel) {}
         }
     }
 }

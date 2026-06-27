@@ -112,6 +112,42 @@ extension Array {
     }
 }
 
+/// A simple line chart for a metric trend (values oldest → newest).
+struct TrendLineChart: View {
+    var values: [Double]          // chronological
+    var color: Color = Theme.green
+
+    private var minV: Double { values.min() ?? 0 }
+    private var maxV: Double { values.max() ?? 1 }
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let range = max(maxV - minV, 0.0001)
+            let pts: [CGPoint] = values.enumerated().map { i, v in
+                let x = values.count <= 1 ? w / 2 : w * CGFloat(i) / CGFloat(values.count - 1)
+                let y = h - (CGFloat((v - minV) / range) * (h - 16)) - 8
+                return CGPoint(x: x, y: y)
+            }
+            ZStack {
+                if pts.count > 1 {
+                    Path { p in
+                        p.move(to: pts[0])
+                        for pt in pts.dropFirst() { p.addLine(to: pt) }
+                    }
+                    .stroke(color, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                }
+                ForEach(pts.indices, id: \.self) { i in
+                    Circle().fill(color)
+                        .frame(width: 6, height: 6)
+                        .position(pts[i])
+                }
+            }
+        }
+    }
+}
+
 /// Lightweight toast overlay.
 struct ToastView: View {
     var message: String
