@@ -12,12 +12,14 @@ struct RootView: View {
                     .tabItem { Label("Dashboard", systemImage: "house.fill") }.tag(0)
                 ProgramsView()
                     .tabItem { Label("Programs", systemImage: "list.bullet.rectangle.fill") }.tag(1)
-                ExerciseDBView()
-                    .tabItem { Label("Workouts", systemImage: "dumbbell.fill") }.tag(2)
+                FoodView()
+                    .tabItem { Label("Nutrition", systemImage: "fork.knife") }.tag(2)
                 FastingView()
                     .tabItem { Label("Fasting", systemImage: "hourglass") }.tag(3)
                 ProgressHubView()
                     .tabItem { Label("Progress", systemImage: "chart.xyaxis.line") }.tag(4)
+                ExerciseDBView()
+                    .tabItem { Label("Workouts", systemImage: "dumbbell.fill") }.tag(5)
             }
 
             // Floating timer button (mirrors the web app's floating timer widget)

@@ -1,5 +1,8 @@
 import Foundation
 import SwiftUI
+import WidgetKit
+
+private let appGroupID = "group.com.adamhoffman.adamsapple"
 
 @MainActor
 final class Store: ObservableObject {
@@ -9,8 +12,9 @@ final class Store: ObservableObject {
     @Published var workouts: [SavedWorkout] = []            { didSet { persist(workouts, "adamsAppleWorkouts") } }
     @Published var customExercises: [DBExercise] = []       { didSet { persist(customExercises, "adamsAppleCustomEx") } }
     @Published var hyroxTargets: [String: Double] = [:]     { didSet { persist(hyroxTargets, "hyroxTargets") } }
-    @Published var fastConfig = FastConfig()                { didSet { persist(fastConfig, "adamsAppleFastCfg") } }
-    @Published var fastState: FastState?                    { didSet { persist(fastState, "adamsAppleFastState") } }
+    @Published var fastConfig = FastConfig()                { didSet { persist(fastConfig, "adamsAppleFastCfg"); pushWidgetFast() } }
+    @Published var fastState: FastState?                    { didSet { persist(fastState, "adamsAppleFastState"); pushWidgetFast() } }
+    @Published var fastHistory: [FastRecord] = []           { didSet { persist(fastHistory, "adamsAppleFastHistory") } }
 
     // Progress tracking
     @Published var weights: [MetricEntry] = []             { didSet { persist(weights, "ppWeights") } }
@@ -21,9 +25,15 @@ final class Store: ObservableObject {
     @Published var measurements: [MeasurementEntry] = []   { didSet { persist(measurements, "ppMeasure") } }
     @Published var photos: [ProgressPhoto] = []            { didSet { persist(photos, "ppPhotos") } }
 
+    // Food tracking
+    @Published var foodLogs: [DayFoodLog] = []             { didSet { persist(foodLogs, "ppFoodLogs"); pushWidgetNutrition() } }
+    @Published var foodGoals = FoodGoals()                 { didSet { persist(foodGoals, "ppFoodGoals"); pushWidgetNutrition() } }
+    @Published var weightUnit: WeightUnit = .grams         { didSet { persist(weightUnit, "ppWeightUnit") } }
+    @Published var customFoods: [OFFFood] = []             { didSet { persist(customFoods, "ppCustomFoods") } }
+
     // In-memory only
     @Published var remoteExercises: [DBExercise] = []
-    @Published var selectedTab = 0     // 0 Dashboard · 1 Programs · 2 Workouts · 3 Fasting · 4 Log
+    @Published var selectedTab = 0     // 0 Dashboard · 1 Programs · 2 Nutrition · 3 Fasting · 4 Progress · 5 Workouts
 
     private var loading = true
 
@@ -33,6 +43,7 @@ final class Store: ObservableObject {
         customExercises = restore("adamsAppleCustomEx", [DBExercise].self) ?? []
         fastConfig      = restore("adamsAppleFastCfg", FastConfig.self) ?? FastConfig()
         fastState       = restore("adamsAppleFastState", FastState.self) ?? nil
+        fastHistory     = restore("adamsAppleFastHistory", [FastRecord].self) ?? []
 
         weights       = restore("ppWeights", [MetricEntry].self) ?? []
         bodyFat       = restore("ppBodyFat", [MetricEntry].self) ?? []
@@ -41,6 +52,10 @@ final class Store: ObservableObject {
         bloodMarkers  = restore("ppBlood", [BloodMarkerEntry].self) ?? []
         measurements  = restore("ppMeasure", [MeasurementEntry].self) ?? []
         photos        = restore("ppPhotos", [ProgressPhoto].self) ?? []
+        foodLogs      = restore("ppFoodLogs",    [DayFoodLog].self) ?? []
+        foodGoals     = restore("ppFoodGoals",   FoodGoals.self)    ?? FoodGoals()
+        weightUnit    = restore("ppWeightUnit",  WeightUnit.self)   ?? .grams
+        customFoods   = restore("ppCustomFoods", [OFFFood].self)    ?? []
 
         if let saved = restore("hyroxTargets", [String: Double].self) {
             hyroxTargets = saved
@@ -101,6 +116,86 @@ final class Store: ObservableObject {
     }
     func deleteExercise(_ ex: DBExercise) {
         customExercises.removeAll { $0.id == ex.id }
+    }
+
+    // MARK: - Fasting history
+
+    func recordFast(start: Date, end: Date) {
+        let record = FastRecord(start: start, end: end,
+                                protocolLabel: fastConfig.label,
+                                targetHours: fastConfig.hours)
+        fastHistory.insert(record, at: 0)
+    }
+
+    func deleteFastRecord(_ record: FastRecord) {
+        fastHistory.removeAll { $0.id == record.id }
+    }
+
+    func updateFastRecord(_ record: FastRecord) {
+        if let i = fastHistory.firstIndex(where: { $0.id == record.id }) {
+            fastHistory[i] = record
+        }
+    }
+
+    // MARK: - Food logs
+
+    func dayLog(for date: Date) -> DayFoodLog {
+        let day = Calendar.current.startOfDay(for: date)
+        return foodLogs.first { Calendar.current.startOfDay(for: $0.day) == day }
+            ?? DayFoodLog(day: day)
+    }
+
+    func addFoodEntry(_ entry: FoodEntry, for date: Date) {
+        let day = Calendar.current.startOfDay(for: date)
+        if let i = foodLogs.firstIndex(where: { Calendar.current.startOfDay(for: $0.day) == day }) {
+            foodLogs[i].entries.append(entry)
+        } else {
+            var log = DayFoodLog(day: day)
+            log.entries.append(entry)
+            foodLogs.insert(log, at: 0)
+        }
+        sortFoodLogs()
+    }
+
+    func deleteFoodEntry(_ entry: FoodEntry, for date: Date) {
+        let day = Calendar.current.startOfDay(for: date)
+        if let i = foodLogs.firstIndex(where: { Calendar.current.startOfDay(for: $0.day) == day }) {
+            foodLogs[i].entries.removeAll { $0.id == entry.id }
+        }
+    }
+
+    func updateDayNote(_ note: String, for date: Date) {
+        let day = Calendar.current.startOfDay(for: date)
+        if let i = foodLogs.firstIndex(where: { Calendar.current.startOfDay(for: $0.day) == day }) {
+            foodLogs[i].note = note
+        } else {
+            foodLogs.insert(DayFoodLog(id: UUID(), day: day, entries: [], note: note), at: 0)
+            sortFoodLogs()
+        }
+    }
+
+    private func sortFoodLogs() {
+        foodLogs.sort { $0.day > $1.day }
+    }
+
+    // MARK: - Custom foods
+
+    func addCustomFood(_ food: OFFFood) {
+        customFoods.insert(food, at: 0)
+    }
+    func deleteCustomFood(_ food: OFFFood) {
+        customFoods.removeAll { $0.id == food.id }
+    }
+
+    /// All foods: custom first, then bundled OFF database
+    var allFoods: [OFFFood] { customFoods + AppData.offFoods }
+
+    /// Unit formatting helpers
+    func formatWeight(_ grams: Double) -> String {
+        let val = grams / weightUnit.toGrams
+        return val.truncatingRemainder(dividingBy: 1) == 0
+            ? "\(Int(val))\(weightUnit.rawValue)"
+            : String(format: "%.1f\(weightUnit.rawValue)", val)
     }
 
     // MARK: - Log
@@ -174,5 +269,32 @@ final class Store: ObservableObject {
 
     func fmtNum(_ v: Double) -> String {
         v.truncatingRemainder(dividingBy: 1) == 0 ? String(Int(v)) : String(format: "%.1f", v)
+    }
+
+    // MARK: - Widget data sync
+
+    private func pushWidgetFast() {
+        guard !loading else { return }
+        let ud = UserDefaults(suiteName: appGroupID)
+        ud?.set(fastConfig.hours, forKey: "widget.fastHours")
+        if let state = fastState,
+           let data = try? JSONEncoder().encode(state.start) {
+            ud?.set(data, forKey: "widget.fastStart")
+        } else {
+            ud?.removeObject(forKey: "widget.fastStart")
+        }
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    private func pushWidgetNutrition() {
+        guard !loading else { return }
+        let today = dayLog(for: Date()).entries
+        let ud = UserDefaults(suiteName: appGroupID)
+        ud?.set(today.reduce(0.0) { $0 + $1.calories }, forKey: "widget.calories")
+        ud?.set(today.reduce(0.0) { $0 + $1.protein },  forKey: "widget.protein")
+        ud?.set(today.reduce(0.0) { $0 + $1.fat },      forKey: "widget.fat")
+        ud?.set(today.reduce(0.0) { $0 + $1.carbs },    forKey: "widget.carbs")
+        ud?.set(foodGoals.calories,                      forKey: "widget.calGoal")
+        WidgetCenter.shared.reloadAllTimelines()
     }
 }

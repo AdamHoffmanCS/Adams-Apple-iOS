@@ -4,6 +4,9 @@ import Foundation
 struct FastingView: View {
     @EnvironmentObject var store: Store
     @State private var customHours: String = ""
+    @State private var showNoteSheet = false
+    @State private var pendingRecord: FastRecord?
+    @State private var showAllHistory = false
 
     private let presets: [(label: String, fast: Double, eat: Double)] = [
         ("14:10", 14, 10), ("16:8", 16, 8), ("18:6", 18, 6), ("20:4", 20, 4), ("OMAD", 23, 1)
@@ -15,6 +18,7 @@ struct FastingView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     countdownCard
                     windowSection
+                    historySection
                     protocolGuide
                     benefits
                     tipsAndSafety
@@ -23,6 +27,18 @@ struct FastingView: View {
             }
             .background(Theme.bg.ignoresSafeArea())
             .navigationTitle("Fasting")
+            .navigationDestination(isPresented: $showAllHistory) {
+                FastingHistoryView()
+                    .environmentObject(store)
+            }
+        }
+        .sheet(isPresented: $showNoteSheet) {
+            if let record = pendingRecord {
+                FastNoteSheet(record: record) { saved in
+                    store.fastHistory.insert(saved, at: 0)
+                    pendingRecord = nil
+                }
+            }
         }
     }
 
@@ -132,6 +148,108 @@ struct FastingView: View {
         VStack(spacing: 3) {
             Text(label.uppercased()).font(.system(size: 11)).foregroundColor(Theme.muted)
             Text(value).font(.system(size: 16, weight: .semibold))
+        }
+    }
+
+    // MARK: - History (last 7 preview)
+
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("Recent Fasts").font(.title3.weight(.semibold))
+
+            if store.fastHistory.isEmpty {
+                Text("Completed fasts will appear here.")
+                    .font(.subheadline).foregroundColor(Theme.muted)
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.vertical, 12)
+            } else {
+                VStack(spacing: 10) {
+                    ForEach(store.fastHistory.prefix(7)) { record in
+                        fastHistoryRow(record)
+                    }
+                }
+                if store.fastHistory.count > 7 {
+                    Button {
+                        showAllHistory = true
+                    } label: {
+                        HStack {
+                            Text("See All History")
+                                .font(.system(size: 15, weight: .semibold))
+                            Spacer()
+                            Text("\(store.fastHistory.count) total")
+                                .font(.caption).foregroundColor(Theme.muted)
+                            Image(systemName: "chevron.right")
+                                .font(.caption).foregroundColor(Theme.muted)
+                        }
+                        .padding(12)
+                        .background(Theme.inset)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .foregroundColor(Theme.green)
+                }
+            }
+        }
+        .card()
+    }
+
+    func fastHistoryRow(_ record: FastRecord) -> some View {
+        let tf = DateFormatter()
+        tf.dateStyle = .medium
+        tf.timeStyle = .none
+        let timeF = DateFormatter()
+        timeF.dateFormat = "h:mm a"
+        let hours = record.durationHours
+        let hrs = Int(hours)
+        let mins = Int((hours - Double(hrs)) * 60)
+        let durationText = mins > 0 ? "\(hrs)h \(mins)m" : "\(hrs)h"
+
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(record.protocolLabel)
+                            .font(.system(size: 14, weight: .bold))
+                            .padding(.horizontal, 8).padding(.vertical, 3)
+                            .background(record.completed ? Theme.green.opacity(0.15) : Theme.inset)
+                            .foregroundColor(record.completed ? Theme.green : Theme.muted)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                        if record.completed {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(Theme.green)
+                                .font(.system(size: 13))
+                        }
+                    }
+                    Text(tf.string(from: record.start))
+                        .font(.system(size: 15, weight: .semibold))
+                    Text("\(timeF.string(from: record.start)) → \(timeF.string(from: record.end))")
+                        .font(.caption).foregroundColor(Theme.muted)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(durationText)
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(record.completed ? Theme.green : Theme.text)
+                    Text(record.completed ? "Complete" : "Partial")
+                        .font(.caption2).foregroundColor(Theme.muted)
+                }
+            }
+            if !record.note.isEmpty {
+                Text(record.note)
+                    .font(.system(size: 13))
+                    .foregroundColor(Theme.muted)
+                    .padding(.top, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+        .padding(12)
+        .background(Theme.inset)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                store.deleteFastRecord(record)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
         }
     }
 
@@ -257,7 +375,13 @@ struct FastingView: View {
     private func startFast() { store.fastState = FastState(start: Date()) }
 
     private func endFast(info: FastInfo) {
+        guard let state = store.fastState else { return }
+        let record = FastRecord(start: state.start, end: Date(),
+                                protocolLabel: store.fastConfig.label,
+                                targetHours: store.fastConfig.hours)
         store.fastState = nil
+        pendingRecord = record
+        showNoteSheet = true
     }
 
     private func selectPreset(_ p: (label: String, fast: Double, eat: Double)) {
@@ -269,5 +393,99 @@ struct FastingView: View {
         guard !isActive, let h = Double(customHours), h >= 1, h <= 48 else { return }
         store.fastConfig = FastConfig(hours: h, eat: h < 24 ? (24 - h) : nil)
         customHours = ""
+    }
+}
+
+// MARK: - End-fast note sheet
+
+struct FastNoteSheet: View {
+    var record: FastRecord
+    var onSave: (FastRecord) -> Void
+
+    @State private var note: String = ""
+    @Environment(\.dismiss) private var dismiss
+
+    private let tf: DateFormatter = {
+        let f = DateFormatter(); f.dateStyle = .medium; f.timeStyle = .none; return f
+    }()
+    private let timeF: DateFormatter = {
+        let f = DateFormatter(); f.dateFormat = "h:mm a"; return f
+    }()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    summaryCard
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("How did it feel?").font(.title3.weight(.semibold))
+                        Text("Optional — add any notes about energy, hunger, mood, or anything else worth tracking.")
+                            .font(.subheadline).foregroundColor(Theme.muted)
+                        TextEditor(text: $note)
+                            .frame(minHeight: 120)
+                            .padding(10)
+                            .background(Theme.inset)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border))
+                    }
+                    .card()
+                }
+                .padding(20)
+            }
+            .background(Theme.bg.ignoresSafeArea())
+            .navigationTitle("Fast Complete")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        var r = record
+                        r.note = note.trimmingCharacters(in: .whitespacesAndNewlines)
+                        onSave(r)
+                        dismiss()
+                    }
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundColor(Theme.green)
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Skip") {
+                        onSave(record)
+                        dismiss()
+                    }
+                    .foregroundColor(Theme.muted)
+                }
+            }
+        }
+    }
+
+    private var summaryCard: some View {
+        let hours = record.durationHours
+        let hrs = Int(hours)
+        let mins = Int((hours - Double(hrs)) * 60)
+        let durationText = mins > 0 ? "\(hrs)h \(mins)m" : "\(hrs)h"
+
+        return VStack(spacing: 16) {
+            Image(systemName: record.completed ? "checkmark.circle.fill" : "clock.fill")
+                .font(.system(size: 44))
+                .foregroundColor(record.completed ? Theme.green : Theme.muted)
+            Text(record.completed ? "Fast Complete!" : "Fast Ended")
+                .font(.title2.weight(.bold))
+            HStack(spacing: 32) {
+                VStack(spacing: 3) {
+                    Text("DURATION").font(.system(size: 11)).foregroundColor(Theme.muted)
+                    Text(durationText).font(.system(size: 18, weight: .bold))
+                        .foregroundColor(record.completed ? Theme.green : Theme.text)
+                }
+                VStack(spacing: 3) {
+                    Text("PROTOCOL").font(.system(size: 11)).foregroundColor(Theme.muted)
+                    Text(record.protocolLabel).font(.system(size: 18, weight: .bold))
+                }
+                VStack(spacing: 3) {
+                    Text("DATE").font(.system(size: 11)).foregroundColor(Theme.muted)
+                    Text(tf.string(from: record.start)).font(.system(size: 15, weight: .semibold))
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .card(padding: 24)
     }
 }

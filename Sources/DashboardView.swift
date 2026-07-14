@@ -4,6 +4,8 @@ import Foundation
 struct DashboardView: View {
     @EnvironmentObject var store: Store
     @State private var quickEntry: QuickEntry?
+    @State private var exportURL: URL?
+    @State private var showExport = false
 
     enum QuickEntry: Identifiable {
         case weight, bodyFat
@@ -26,6 +28,11 @@ struct DashboardView: View {
                         StatCard(value: "\(store.streak)", label: "Day Streak 🔥")
                         StatCard(value: latestWeight.map { store.fmtNum($0.value) } ?? "—",
                                  label: "Weight (lbs)")
+                    }
+
+                    HStack(spacing: 12) {
+                        fastingCard
+                        nutritionCard
                     }
 
                     VStack(alignment: .leading, spacing: 16) {
@@ -63,6 +70,26 @@ struct DashboardView: View {
             .background(Theme.bg.ignoresSafeArea())
             .navigationTitle("🍎 Adams Apple")
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        if let url = try? store.exportAllData() {
+                            exportURL = url
+                            showExport = true
+                        }
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .foregroundColor(Theme.green)
+                    }
+                    .accessibilityLabel("Export Data")
+                }
+            }
+            .sheet(isPresented: $showExport) {
+                if let url = exportURL {
+                    ActivityShareSheet(items: [url])
+                        .presentationDetents([.medium, .large])
+                }
+            }
             .sheet(item: $quickEntry) { entry in
                 switch entry {
                 case .weight:
@@ -76,6 +103,93 @@ struct DashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Fasting countdown card
+
+    private var fastingCard: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let (display, sub, active) = fastingInfo(at: context.date)
+            Button { store.selectedTab = 3 } label: {
+                VStack(spacing: 6) {
+                    Text("Fasting")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Theme.muted)
+                    Text(display)
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .monospacedDigit()
+                        .foregroundColor(active ? Theme.green : Theme.muted)
+                        .minimumScaleFactor(0.6)
+                        .lineLimit(1)
+                    Text(sub)
+                        .font(.system(size: 11))
+                        .foregroundColor(Theme.muted)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20).padding(.horizontal, 8)
+                .background(Theme.card)
+                .clipShape(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+                .shadow(color: Theme.shadow, radius: 6, x: 0, y: 2)
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func fastingInfo(at date: Date) -> (display: String, sub: String, active: Bool) {
+        guard let state = store.fastState else {
+            return (store.fastConfig.label, "not fasting", false)
+        }
+        let end = state.start.addingTimeInterval(store.fastConfig.hours * 3600)
+        let remaining = end.timeIntervalSince(date)
+        if remaining > 0 {
+            return (TimerModel.format(Int(remaining)), "remaining", true)
+        } else {
+            return ("00:00:00", "window open", true)
+        }
+    }
+
+    // MARK: - Nutrition card
+
+    private var nutritionCard: some View {
+        let todayEntries = store.dayLog(for: Date()).entries
+        let cal     = todayEntries.reduce(0.0) { $0 + $1.calories }
+        let protein = todayEntries.reduce(0.0) { $0 + $1.protein }
+        let fat     = todayEntries.reduce(0.0) { $0 + $1.fat }
+        let carbs   = todayEntries.reduce(0.0) { $0 + $1.carbs }
+        let goal    = store.foodGoals.calories
+
+        return Button { store.selectedTab = 2 } label: {
+            VStack(spacing: 6) {
+                Text("Nutrition")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundColor(Theme.muted)
+                Text("\(Int(cal))")
+                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .foregroundColor(cal > 0 ? Theme.green : Theme.muted)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                Text("kcal")
+                    .font(.system(size: 11))
+                    .foregroundColor(Theme.muted)
+                if cal > 0 {
+                    Text("P \(Int(protein))g · F \(Int(fat))g · C \(Int(carbs))g")
+                        .font(.system(size: 10))
+                        .foregroundColor(Theme.muted)
+                        .multilineTextAlignment(.center)
+                } else {
+                    Text("of \(Int(goal)) kcal goal")
+                        .font(.system(size: 10))
+                        .foregroundColor(Theme.muted)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20).padding(.horizontal, 8)
+            .background(Theme.card)
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radius, style: .continuous))
+            .shadow(color: Theme.shadow, radius: 6, x: 0, y: 2)
+        }
+        .buttonStyle(.plain)
     }
 
     private func dateStr(_ d: Date) -> String {

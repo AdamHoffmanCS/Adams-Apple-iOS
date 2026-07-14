@@ -22,3 +22,4 @@ AdamsApple.xcodeproj/
 
 # CocoaPods (not used, but just in case)
 Pods/
+.claude/

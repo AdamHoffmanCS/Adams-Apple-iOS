@@ -33,6 +33,25 @@ enum AppData {
     static let exerciseDBURL =
         URL(string: "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/dist/exercises.json")!
 
+    /// Open Food Facts database (per-100g macros). Loaded once at startup.
+    /// This app uses data from Open Food Facts (https://world.openfoodfacts.org),
+    /// made available under the Open Database License (ODbL v1.0).
+    static let offFoods: [OFFFood] = {
+        guard let url = Bundle.main.url(forResource: "offFoods", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let foods = try? JSONDecoder().decode([OFFFood].self, from: data) else { return [] }
+        return foods
+    }()
+
+    /// Barcode → food lookup (built lazily from offFoods)
+    static let offByBarcode: [String: OFFFood] = {
+        var map: [String: OFFFood] = [:]
+        for food in offFoods {
+            if let code = food.barcode { map[code] = food }
+        }
+        return map
+    }()
+
     /// Category tabs for the exercise database filter (mirrors the web filter row).
     static let dbFilters: [(key: String, label: String)] = [
         ("all", "All"), ("chest", "Chest"), ("back", "Back"), ("shoulders", "Shoulders"),
