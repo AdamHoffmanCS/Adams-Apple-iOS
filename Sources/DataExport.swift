@@ -61,6 +61,35 @@ extension Store {
         try data.write(to: url, options: .atomic)
         return url
     }
+
+    /// Reads a JSON backup file (as produced by `exportAllData`) and replaces all local data with its contents.
+    func importAllData(from url: URL) throws {
+        let needsAccess = url.startAccessingSecurityScopedResource()
+        defer { if needsAccess { url.stopAccessingSecurityScopedResource() } }
+
+        let data = try Data(contentsOf: url)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let backup = try decoder.decode(AppBackup.self, from: data)
+
+        log = backup.workoutLog
+        workouts = backup.workouts
+        customExercises = backup.customExercises
+        hyroxTargets = backup.hyroxTargets
+        fastConfig = backup.fastConfig
+        fastState = backup.fastState
+        fastHistory = backup.fastHistory
+        weights = backup.weights
+        bodyFat = backup.bodyFat
+        restingHR = backup.restingHR
+        bloodPressure = backup.bloodPressure
+        bloodMarkers = backup.bloodMarkers
+        measurements = backup.measurements
+        photos = backup.photos
+        foodLogs = backup.foodLogs
+        foodGoals = backup.foodGoals
+        customFoods = backup.customFoods
+    }
 }
 
 /// UIKit share-sheet wrapper (lets us generate the file only when tapped).

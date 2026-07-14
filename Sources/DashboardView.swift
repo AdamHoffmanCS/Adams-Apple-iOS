@@ -1,11 +1,16 @@
 import SwiftUI
 import Foundation
+import UniformTypeIdentifiers
 
 struct DashboardView: View {
     @EnvironmentObject var store: Store
     @State private var quickEntry: QuickEntry?
     @State private var exportURL: URL?
     @State private var showExport = false
+    @State private var showImporter = false
+    @State private var pendingImportURL: URL?
+    @State private var showImportConfirm = false
+    @State private var importError: String?
 
     enum QuickEntry: Identifiable {
         case weight, bodyFat
@@ -72,16 +77,25 @@ struct DashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        if let url = try? store.exportAllData() {
-                            exportURL = url
-                            showExport = true
+                    Menu {
+                        Button {
+                            if let url = try? store.exportAllData() {
+                                exportURL = url
+                                showExport = true
+                            }
+                        } label: {
+                            Label("Export Data", systemImage: "square.and.arrow.up")
+                        }
+                        Button {
+                            showImporter = true
+                        } label: {
+                            Label("Import Data…", systemImage: "square.and.arrow.down")
                         }
                     } label: {
                         Image(systemName: "square.and.arrow.up")
                             .foregroundColor(Theme.green)
                     }
-                    .accessibilityLabel("Export Data")
+                    .accessibilityLabel("Backup Data")
                 }
             }
             .sheet(isPresented: $showExport) {
@@ -89,6 +103,39 @@ struct DashboardView: View {
                     ActivityShareSheet(items: [url])
                         .presentationDetents([.medium, .large])
                 }
+            }
+            .fileImporter(isPresented: $showImporter, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url):
+                    pendingImportURL = url
+                    showImportConfirm = true
+                case .failure(let error):
+                    importError = error.localizedDescription
+                }
+            }
+            .confirmationDialog(
+                "Replace all data on this device with the contents of this backup? This can't be undone.",
+                isPresented: $showImportConfirm,
+                titleVisibility: .visible
+            ) {
+                Button("Import & Replace", role: .destructive) {
+                    guard let url = pendingImportURL else { return }
+                    do {
+                        try store.importAllData(from: url)
+                    } catch {
+                        importError = error.localizedDescription
+                    }
+                    pendingImportURL = nil
+                }
+                Button("Cancel", role: .cancel) { pendingImportURL = nil }
+            }
+            .alert("Import Failed", isPresented: Binding(
+                get: { importError != nil },
+                set: { if !$0 { importError = nil } }
+            )) {
+                Button("OK") { importError = nil }
+            } message: {
+                Text(importError ?? "")
             }
             .sheet(item: $quickEntry) { entry in
                 switch entry {
